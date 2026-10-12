@@ -168,5 +168,3 @@ src/test/java/       Pruebas de servicios, pantallas y seguridad
 ## Autor
 
 **Benjamin Olate** · [github.com/benjaminolate](https://github.com/benjaminolate)
-
-El proyecto se originó en conjunto con **[NOMBRE DEL COMPAÑERO]** ([github.com/Lieztz3r](https://github.com/Lieztz3r)).
