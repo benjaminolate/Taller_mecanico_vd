@@ -1,0 +1,22 @@
+# Compila y corre todas las pruebas en cada push y pull request.
+# La versión demo usa H2 en memoria, así que no necesita servicios externos.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Compilar y probar
+        run: ./mvnw -B verify

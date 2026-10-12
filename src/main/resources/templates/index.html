@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout}">
+<head>
+    <title>Inicio - Taller Demo</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div th:if="${mensajeExito}" class="alert alert-success" th:text="${mensajeExito}">Listo.</div>
+    <div th:if="${mensajeError}" class="alert alert-danger" th:text="${mensajeError}">Error.</div>
+
+    <!-- Encabezado y accesos rápidos -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-0">Panel del taller</h1>
+            <span class="text-muted" th:text="${#temporals.format(#temporals.createNow(), 'dd-MM-yyyy')}">01-01-2026</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a th:href="@{/ordenes/nueva}" class="btn btn-success fw-bold">+ Nueva orden</a>
+            <a th:href="@{/ordenes/lista}" class="btn btn-outline-primary">Historial</a>
+            <a th:href="@{/firmas}" class="btn btn-outline-secondary">Firmas pendientes</a>
+        </div>
+    </div>
+
+    <!-- Conteo por estado -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <a th:href="@{/ordenes/lista(estado='PENDIENTE')}" class="card shadow-sm border-0 border-start border-4 border-warning text-decoration-none h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Pendientes</div>
+                    <div class="fs-2 fw-bold text-dark" th:text="${conteo['PENDIENTE']}">0</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a th:href="@{/ordenes/lista(estado='EN_PROCESO')}" class="card shadow-sm border-0 border-start border-4 border-info text-decoration-none h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">En proceso</div>
+                    <div class="fs-2 fw-bold text-dark" th:text="${conteo['EN_PROCESO']}">0</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a th:href="@{/ordenes/lista(estado='LISTO')}" class="card shadow-sm border-0 border-start border-4 border-success text-decoration-none h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Listas para entregar</div>
+                    <div class="fs-2 fw-bold text-dark" th:text="${conteo['LISTO']}">0</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Ingresadas este mes</div>
+                    <div class="fs-2 fw-bold text-dark" th:text="${ingresadasMes}">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sin mecánico asignado: se asigna aquí mismo -->
+    <div class="card shadow-sm border-0 mb-4" th:unless="${#lists.isEmpty(sinMecanico)}" id="sin-mecanico">
+        <div class="card-header bg-warning fw-bold"
+             th:text="${'Sin mecánico asignado (' + #lists.size(sinMecanico) + ')'}">Sin mecánico asignado</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Orden</th><th>Patente / Cliente</th><th>Recibió</th><th class="text-end">Días</th><th>Asignar a</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="o : ${sinMecanico}">
+                            <td class="fw-bold"><a th:href="@{'/ordenes/' + ${o.id}}" th:text="${o.id}">ORD-001</a></td>
+                            <td>
+                                <span class="badge bg-secondary text-uppercase"
+                                      th:text="${o.vehiculo != null ? o.vehiculo.patente : 'Cremallera'}">DEMO01</span>
+                                <span class="small" th:text="${o.cliente?.nombre}">Cliente</span>
+                            </td>
+                            <td class="small" th:text="${o.recibidoPor != null ? o.recibidoPor.nombre : '—'}">—</td>
+                            <td class="text-end" th:text="${o.diasDesdeIngreso}">0</td>
+                            <td>
+                                <form th:action="@{'/ordenes/' + ${o.id} + '/mecanico'}" method="post" class="d-flex gap-1" style="min-width:200px">
+                                    <input type="hidden" name="volver" value="/">
+                                    <select name="mecanicoId" class="form-select form-select-sm" required>
+                                        <option value="">Elegir...</option>
+                                        <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"></option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Asignar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Listas para entregar -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-success text-white fw-bold">Listas para entregar</div>
+                <div class="card-body p-0">
+                    <p th:if="${#lists.isEmpty(listas)}" class="text-muted p-3 mb-0">No hay órdenes listas esperando retiro.</p>
+                    <div th:unless="${#lists.isEmpty(listas)}" class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th>Orden</th><th>Patente / Cliente</th><th class="text-end">Días</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="o : ${listas}">
+                                    <td class="fw-bold text-primary" th:text="${o.id}">ORD-001</td>
+                                    <td>
+                                        <span class="badge bg-secondary text-uppercase"
+                                              th:text="${o.vehiculo != null ? o.vehiculo.patente : 'Cremallera'}">DEMO01</span>
+                                        <span class="small" th:text="${o.cliente?.nombre}">Cliente</span>
+                                    </td>
+                                    <td class="text-end" th:text="${o.diasDesdeIngreso}">0</td>
+                                    <td class="text-end"><a th:href="@{'/ordenes/' + ${o.id}}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Atrasadas -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-warning fw-bold"
+                     th:text="${'Más de ' + diasAtraso + ' días sin terminar'}">Más de 7 días sin terminar</div>
+                <div class="card-body p-0">
+                    <p th:if="${#lists.isEmpty(atrasadas)}" class="text-muted p-3 mb-0">Ninguna orden atrasada.</p>
+                    <div th:unless="${#lists.isEmpty(atrasadas)}" class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th>Orden</th><th>Patente / Cliente</th><th>Estado</th><th class="text-end">Días</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="o : ${atrasadas}">
+                                    <td class="fw-bold text-primary" th:text="${o.id}">ORD-001</td>
+                                    <td>
+                                        <span class="badge bg-secondary text-uppercase"
+                                              th:text="${o.vehiculo != null ? o.vehiculo.patente : 'Cremallera'}">DEMO01</span>
+                                        <span class="small" th:text="${o.cliente?.nombre}">Cliente</span>
+                                    </td>
+                                    <td class="small" th:text="${o.estado.etiqueta}">Pendiente</td>
+                                    <td class="text-end fw-bold text-danger" th:text="${o.diasDesdeIngreso}">0</td>
+                                    <td class="text-end"><a th:href="@{'/ordenes/' + ${o.id}}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen por mecánico (solo jefe) -->
+    <div class="card shadow-sm border-0 mb-4" sec:authorize="hasRole('JEFE')" th:if="${resumenMecanicos != null}" id="resumen-mecanicos">
+        <div class="card-header bg-dark text-white fw-bold">Mecánicos este mes</div>
+        <div class="card-body p-0">
+            <p th:if="${#lists.isEmpty(resumenMecanicos)}" class="text-muted p-3 mb-0">No hay mecánicos registrados.</p>
+            <div th:unless="${#lists.isEmpty(resumenMecanicos)}" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mecánico</th>
+                            <th class="text-end">Órdenes a cargo</th>
+                            <th class="text-end">Trabajos completados</th>
+                            <th class="text-end">Monto de trabajos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${resumenMecanicos}">
+                            <td th:text="${r.nombre}">Pedro</td>
+                            <td class="text-end" th:text="${r.ordenesResponsable}">0</td>
+                            <td class="text-end" th:text="${r.trabajosCompletados}">0</td>
+                            <td class="text-end" th:text="${'$' + #numbers.formatDecimal(r.montoTrabajos, 1, 'POINT', 0, 'COMMA')}">$0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer small text-muted">
+            Desde el día 1 del mes. El monto suma los precios de los trabajos marcados como completados.
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

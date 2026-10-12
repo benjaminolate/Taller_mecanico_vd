@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE - Taller Demo">Taller Demo</title>
+    <!-- Bootstrap incluido en la app: funciona aunque no haya internet en el taller -->
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/}">Taller Demo</a>
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-lg-center" sec:authorize="isAuthenticated()">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/}">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/ordenes/nueva}">Nueva Orden</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/ordenes/lista}">Historial</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/clientes}">Clientes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/firmas}">Firmas</a>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="hasRole('JEFE')">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        Administración
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" th:href="@{/mecanicos}">Mecánicos</a></li>
+                        <li><a class="dropdown-item" th:href="@{/catalogo}">Catálogo de trabajos</a></li>
+                        <li><a class="dropdown-item" th:href="@{/usuarios}">Cuentas y contraseñas</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item ms-lg-3 d-flex align-items-center text-light py-2 py-lg-0">
+                    <span th:text="${nombreUsuarioActual ?: #authentication.name}">usuario</span>
+                    <span class="badge ms-2" sec:authorize="hasRole('JEFE')"
+                          style="background:#ffc107;color:#212529">Jefe</span>
+                    <span class="badge bg-secondary ms-2" sec:authorize="hasRole('EMPLEADO')">Empleado</span>
+                </li>
+                <li class="nav-item ms-lg-2">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-light">Cerrar sesión</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- layout:fragment="content" es donde cada página hija inyecta su contenido -->
+<main class="container py-4" layout:fragment="content">
+</main>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

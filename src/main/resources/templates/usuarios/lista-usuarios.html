@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Cuentas y contraseñas</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="fw-bold text-secondary mb-2">Cuentas y contraseñas</h2>
+    <p class="text-muted mb-4">
+        Desde aquí puedes cambiar el usuario y la contraseña de cualquiera de las dos cuentas.
+    </p>
+
+    <div th:if="${mensajeExito}" class="alert alert-success" th:text="${mensajeExito}">Listo.</div>
+    <div th:if="${mensajeError}" class="alert alert-danger" th:text="${mensajeError}">Error.</div>
+
+    <div class="row g-4">
+        <div class="col-md-6" th:each="u : ${usuarios}">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h3 class="h5 fw-bold mb-1" th:text="${u.nombreCompleto}">Nombre</h3>
+                            <span class="text-muted small">Usuario para entrar: <code th:text="${u.username}">usuario</code></span>
+                        </div>
+                        <span class="badge"
+                              th:classappend="${u.rol.name() == 'JEFE'} ? 'text-bg-warning' : 'text-bg-secondary'"
+                              th:text="${u.rol.etiqueta}">Rol</span>
+                    </div>
+                    <form th:action="@{'/usuarios/' + ${u.id} + '/username'}" method="post" class="mb-4">
+                        <label class="form-label small fw-semibold" th:for="${'usuario' + u.id}">Nombre de usuario</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="nuevo" th:id="${'usuario' + u.id}"
+                                   th:value="${u.username}" autocomplete="off" autocapitalize="none" spellcheck="false"
+                                   required minlength="3" maxlength="30" pattern="[A-Za-z0-9._\-]+">
+                            <button type="submit" class="btn btn-outline-primary">Cambiar usuario</button>
+                        </div>
+                        <small class="text-muted d-block mt-1">3 a 30 caracteres: letras sin tildes, números, punto o guion.</small>
+                    </form>
+                    <form th:action="@{'/usuarios/' + ${u.id} + '/password'}" method="post">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold" th:for="${'nueva' + u.id}">Nueva contraseña</label>
+                            <input type="password" class="form-control" name="nueva" th:id="${'nueva' + u.id}"
+                                   autocomplete="new-password" required th:minlength="${largoMinimo}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" th:for="${'conf' + u.id}">Repite la contraseña</label>
+                            <input type="password" class="form-control" name="confirmacion" th:id="${'conf' + u.id}"
+                                   autocomplete="new-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Cambiar contraseña</button>
+                        <small class="text-muted d-block mt-2" th:text="${'Mínimo ' + largoMinimo + ' caracteres.'}">Mínimo 6 caracteres.</small>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-light border mt-4 small">
+        <strong>¿Se olvidó una contraseña?</strong> 
+    </div>
+</div>
+</body>
+</html>

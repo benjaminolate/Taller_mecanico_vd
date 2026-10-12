@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Detalle de Orden</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary">
+            Detalle de la Orden
+            <span class="text-primary" th:text="${orden?.id}"></span>
+        </h2>
+        <div>
+            <a th:if="${orden != null and !orden.estado.esFinal()}"
+               th:href="@{'/ordenes/' + ${orden.id} + '/editar'}"
+               class="btn btn-outline-primary me-2">Editar orden</a>
+            <a th:if="${orden != null}"
+               th:href="@{'/ordenes/' + ${orden.id} + '/pdf'}"
+               class="btn btn-outline-danger me-2"
+               target="_blank">Generar PDF</a>
+            <a th:href="@{/ordenes/lista}" class="btn btn-outline-secondary">
+                Volver al Historial
+            </a>
+        </div>
+    </div>
+    <div th:if="${mensajeExito}" class="alert alert-success" th:text="${mensajeExito}">Listo.</div>
+    <div th:if="${mensajeError}" class="alert alert-danger" th:text="${mensajeError}">Error.</div>
+    <div th:if="${orden == null}" class="alert alert-warning">
+        No se encontró la información de esta orden.
+    </div>
+    <div th:if="${orden != null}">
+        <!-- ── Bloque: Información General ──────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Información del Ingreso</h5>
+                <span class="badge bg-warning text-dark fs-6"
+                      th:text="${orden.estado}">ESTADO</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Fecha</p>
+                        <p class="fw-bold mb-0"
+                           th:text="${#temporals.format(orden.fecha, 'dd/MM/yyyy HH:mm')}">—</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Tipo de Ingreso</p>
+                        <p class="fw-bold mb-0" th:text="${orden.tipoIngreso}">—</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Cliente</p>
+                        <p class="fw-bold mb-0">
+                            <a th:href="@{'/clientes/' + ${orden.cliente.id}}" th:text="${orden.cliente?.nombre}"
+                               title="Ver historial del cliente">—</a>
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Teléfono</p>
+                        <p class="fw-bold mb-0" th:text="${orden.cliente?.telefono ?: 'No registrado'}">—</p>
+                    </div>
+                </div>
+                <div class="row g-3 align-items-end mb-3">
+                    <div class="col-md-4">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Recibido por</p>
+                        <p class="fw-bold mb-0" th:text="${orden.recibidoPor != null ? orden.recibidoPor.nombre : '—'}">—</p>
+                    </div>
+                    <div class="col-md-8">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Mecánico que realiza el trabajo</p>
+                        <form th:action="@{'/ordenes/' + ${orden.id} + '/mecanico'}" method="post"
+                              class="d-flex gap-2" id="form-asignar-mecanico" style="max-width:460px">
+                            <select name="mecanicoId" class="form-select form-select-sm"
+                                    th:classappend="${orden.mecanico == null} ? 'border-warning'">
+                                <option value="" th:selected="${orden.mecanico == null}">Sin asignar</option>
+                                <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"
+                                        th:selected="${orden.mecanico != null and orden.mecanico.id == m.id}"></option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary text-nowrap">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0" th:if="${orden.creadoPor != null}">
+                    Registrada por <strong th:text="${orden.creadoPor}">usuario</strong>
+                    <span th:if="${orden.modificadoPor != null and orden.modificadoEn != null}">
+                        · última modificación por <strong th:text="${orden.modificadoPor}">usuario</strong>
+                        el <span th:text="${#temporals.format(orden.modificadoEn, 'dd/MM/yyyy HH:mm')}">fecha</span>
+                    </span>
+                </p>
+            </div>
+        </div>
+        <!-- ── Bloque: Vehículo ──────────────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.vehiculo != null}">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Patente</p>
+                        <span class="badge bg-secondary fs-6 text-uppercase"
+                              th:text="${orden.vehiculo.patente}">DEMO01</span>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Marca / Modelo</p>
+                        <p class="fw-bold mb-0"
+                           th:text="${orden.vehiculo.marca + ' ' + orden.vehiculo.modelo
+                                      + ' (' + (orden.vehiculo.anio ?: '?') + ')'}">—</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Tipo</p>
+                        <p class="fw-bold mb-0" th:text="${orden.vehiculo.tipoVehiculo}">—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Bloque: Estado del Vehículo ──────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.estadoVehiculo != null}">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Estado Visual del Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <span th:text="${orden.estadoVehiculo.rayones ? '✔ Rayones' : '✘ Sin rayones'}"
+                              th:class="${orden.estadoVehiculo.rayones ? 'badge bg-danger' : 'badge bg-success'}">
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <span th:text="${orden.estadoVehiculo.golpes ? '✔ Golpes' : '✘ Sin golpes'}"
+                              th:class="${orden.estadoVehiculo.golpes ? 'badge bg-danger' : 'badge bg-success'}">
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Combustible</p>
+                        <p class="mb-0" th:text="${(orden.estadoVehiculo.nivelCombustible ?: '?') + '%'}">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Obs. Generales</p>
+                        <p class="mb-0"
+                           th:text="${orden.estadoVehiculo.obsGenerales ?: 'Sin observaciones.'}">—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Bloque: Estado de la Cremallera ──────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.estadoCremallera != null}">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Estado de la Cremallera</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <span th:text="${orden.estadoCremallera.fugasAceite ? '✔ Fugas aceite' : '✘ Sin fugas'}"
+                              th:class="${orden.estadoCremallera.fugasAceite ? 'badge bg-danger' : 'badge bg-success'}">
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <span th:text="${orden.estadoCremallera.juegoExcesivo ? '✔ Juego excesivo' : '✘ Sin juego'}"
+                              th:class="${orden.estadoCremallera.juegoExcesivo ? 'badge bg-danger' : 'badge bg-success'}">
+                        </span>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Marca</p>
+                        <p class="mb-0" th:text="${orden.estadoCremallera.marcaCremallera ?: '—'}">—</p>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="text-muted mb-1 small fw-bold text-uppercase">Observaciones</p>
+                        <p class="mb-0"
+                           th:text="${orden.estadoCremallera.obsCremallera ?: 'Sin observaciones.'}">—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════
+             Avisar por WhatsApp (solo si la orden está LISTA y el cliente
+             tiene un teléfono válido).
+             - Botón principal: whatsapp://send abre directo el chat en la app
+               de WhatsApp (PC con WhatsApp de escritorio, celular o tablet),
+               sin pasar por páginas intermedias.
+             - Enlace secundario: WhatsApp Web en una pestaña con nombre fijo,
+               así cada aviso reutiliza la misma pestaña en vez de abrir otra.
+             @{...(text=...)} codifica el mensaje para la URL.
+        ══════════════════════════════════════════════════════════ -->
+        <div class="card shadow-sm border-0 mb-4"
+             th:if="${orden.estado != null and orden.estado.name() == 'LISTO' and orden.cliente?.telefonoWhatsapp != null}"
+             th:with="tel=${orden.cliente.telefonoWhatsapp},
+                      msg=${'Hola ' + orden.cliente.nombre + ', te informamos que tu vehículo'
+                            + (orden.vehiculo != null ? ' patente ' + orden.vehiculo.patente : '')
+                            + ' ya está listo y puedes pasar a retirarlo.'}">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <h5 class="mb-1 fw-bold">Vehículo listo</h5>
+                    <p class="text-muted mb-0 small">Notifica al cliente que puede retirar su vehículo.</p>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    <a th:href="@{whatsapp://send(phone=${tel}, text=${msg})}"
+                       id="whatsapp-app"
+                       class="btn btn-success fw-bold px-4 text-nowrap">
+                        📲 Avisar por WhatsApp
+                    </a>
+                    <a th:href="@{https://web.whatsapp.com/send(phone=${tel}, text=${msg})}"
+                       id="whatsapp-web"
+                       target="whatsapp-web"
+                       class="small text-success">Usar WhatsApp Web</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Firmas del cliente ───────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white"><h5 class="mb-0">Firmas del cliente</h5></div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6" th:each="m : ${momentosFirma}" th:with="f=${firmas.get(m)}">
+                        <h6 class="fw-bold" th:text="${m.etiqueta}">Recepción</h6>
+                        <!-- Firmada -->
+                        <div th:if="${f != null and f.firmada}">
+                            <img th:src="${f.imagenDataUri}" alt="Firma" class="border rounded bg-white"
+                                 style="max-width:100%; height:110px; object-fit:contain">
+                            <div class="small text-muted mt-1"
+                                 th:text="${f.nombreFirmante + (f.rutFirmante != null ? ' · ' + f.rutFirmante : '')
+                                           + ' · ' + #temporals.format(f.creadoEn, 'dd/MM/yyyy HH:mm')}">—</div>
+                        </div>
+                        <!-- Registrada sin firma -->
+                        <div th:if="${f != null and !f.firmada}" class="text-muted">
+                            Registrada sin firma
+                            <span th:text="${'· ' + #temporals.format(f.creadoEn, 'dd/MM/yyyy HH:mm')}"></span>
+                        </div>
+                        <!-- Anular -->
+                        <form th:if="${f != null and !(m.name() == 'RECEPCION' and orden.estado.esFinal())}"
+                              th:action="@{'/firmas/' + ${f.id} + '/anular'}" method="post" class="mt-2"
+                              onsubmit="return confirm('¿Anular este registro para volver a firmar?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Anular y volver a firmar</button>
+                        </form>
+                        <!-- Pendiente -->
+                        <div th:if="${f == null}">
+                            <a th:if="${m.name() == 'RECEPCION' and !orden.estado.esFinal()}"
+                               th:href="@{'/ordenes/' + ${orden.id} + '/firmar/recepcion'}"
+                               class="btn btn-primary">Firmar recepción</a>
+                            <a th:if="${m.name() == 'RETIRO' and (orden.estado.name() == 'LISTO' or orden.estado.esFinal())}"
+                               th:href="@{'/ordenes/' + ${orden.id} + '/firmar/retiro'}"
+                               class="btn btn-success">Firmar retiro</a>
+                            <span th:if="${m.name() == 'RETIRO' and orden.estado.name() != 'LISTO' and !orden.estado.esFinal()}"
+                                  class="text-muted small">Disponible cuando la orden esté Lista.</span>
+                            <span th:if="${m.name() == 'RECEPCION' and orden.estado.esFinal()}"
+                                  class="text-muted small">No se registró.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Acceso a Trabajos Técnicos ─────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-1 fw-bold">Trabajos Técnicos</h5>
+                    <p class="text-muted mb-0 small">
+                        Gestiona los diagnósticos, reparaciones y tareas de esta orden.
+                        Puedes registrar cada trabajo, asignar mecánico, informar costo y
+                        marcarlos como completados.
+                    </p>
+                </div>
+                <a th:href="@{'/ordenes/' + ${orden.id} + '/trabajos'}"
+                   class="btn btn-primary fw-bold px-4 text-nowrap">
+                    Ver / Gestionar Trabajos
+                </a>
+            </div>
+        </div>
+    </div><!-- ← cierra th:if="${orden != null}" -->
+</div><!-- ← cierra layout:fragment="content" -->
+</body>
+</html>

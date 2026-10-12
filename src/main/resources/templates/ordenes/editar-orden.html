@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Editar Orden</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary mb-0">
+            Editar orden <span class="text-primary" th:text="${orden.id}">ORD-001</span>
+        </h2>
+        <a th:href="@{'/ordenes/' + ${orden.id}}" class="btn btn-outline-secondary">Volver al detalle</a>
+    </div>
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <strong>Error:</strong> <span th:text="${error}">Detalle del error.</span>
+    </div>
+    <form th:action="@{'/ordenes/' + ${orden.id} + '/editar'}" th:object="${ordenRequest}" method="POST" novalidate>
+        <!-- ── Cliente ─────────────────────────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Cliente</h5></div>
+            <div class="card-body">
+                <label class="form-label fw-bold">Cliente de la orden</label>
+                <select class="form-select" th:field="*{clienteId}">
+                    <option th:each="c : ${clientes}" th:value="${c.id}"
+                            th:text="${c.nombre + (c.rut != null ? ' · ' + c.rut : '') + (c.telefono != null ? ' · ' + c.telefono : '')}"></option>
+                </select>
+                <small class="text-muted">
+                    Para corregir el nombre, RUT o teléfono del cliente usa
+                    <a th:href="@{'/clientes/' + ${orden.cliente.id} + '/editar'}">Editar cliente</a>.
+                </small>
+            </div>
+        </div>
+        <!-- ── Mecánicos ───────────────────────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mecánicos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                <label class="form-label fw-bold" for="recibidoPorId">¿Quién recibe el vehículo? <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{recibidoPorId}"
+                        th:classappend="${#fields.hasErrors('recibidoPorId')} ? 'is-invalid'" style="max-width:420px">
+                    <option value="">Seleccione...</option>
+                    <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{recibidoPorId}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold" for="mecanicoId">¿Quién realiza el trabajo?</label>
+                        <select class="form-select" th:field="*{mecanicoId}" style="max-width:420px">
+                            <option value="">Sin asignar</option>
+                            <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"></option>
+                        </select>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1" th:if="${#lists.isEmpty(mecanicosActivos)}">
+                    No hay mecánicos activos. El jefe debe agregarlos en Administración &gt; Mecánicos.
+                </small>
+            </div>
+        </div>
+        <!-- ── Vehículo ────────────────────────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.tipoIngreso.name() == 'VEHICULO'}">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Vehículo</h5></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Patente</label>
+                        <input type="text" class="form-control text-uppercase" th:field="*{vehiculoPatente}">
+                        <small class="text-muted">Si cambias la patente se asocia ese vehículo (o se crea uno nuevo).</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Marca</label>
+                        <input type="text" class="form-control" th:field="*{vehiculoMarca}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Modelo</label>
+                        <input type="text" class="form-control" th:field="*{vehiculoModelo}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold">Año</label>
+                        <input type="number" class="form-control" th:field="*{vehiculoAnio}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Tipo</label>
+                        <select class="form-select" th:field="*{vehiculoTipo}">
+                            <option value="">-</option>
+                            <option th:each="tv : ${tiposVehiculo}" th:value="${tv}" th:text="${tv}"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Sección 3: Estado del Vehículo ─────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.tipoIngreso.name() == 'VEHICULO'}">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Estado visual del vehículo al ingreso</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{rayones}">
+                            <label class="form-check-label">Rayones visibles</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{golpes}">
+                            <label class="form-check-label">Golpes</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{nivelAceiteBajo}">
+                            <label class="form-check-label">Nivel aceite bajo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{nivelAguaBajo}">
+                            <label class="form-check-label">Nivel agua bajo</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Combustible (%)</label>
+                        <input type="number" class="form-control"
+                               th:field="*{nivelCombustible}"
+                               min="0" max="100" placeholder="75">
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label fw-bold">Observaciones generales</label>
+                        <textarea class="form-control" rows="2"
+                                  th:field="*{obsGenerales}"
+                                  placeholder="Estado general del vehículo al ingreso..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Sección 4: Estado de la Cremallera ─────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4" th:if="${orden.tipoIngreso.name() == 'CREMALLERA'}">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Diagnóstico de la cremallera al ingreso</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{dienteDaniados}">
+                            <label class="form-check-label">Dientes dañados</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{fugasAceite}">
+                            <label class="form-check-label">Fugas de aceite</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{juegoExcesivo}">
+                            <label class="form-check-label">Juego excesivo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{bujesGastados}">
+                            <label class="form-check-label">Bujes gastados</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Marca Cremallera</label>
+                        <input type="text" class="form-control"
+                               th:field="*{marcaCremallera}" placeholder="Ej. TRW">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox"
+                                   th:field="*{esOriginal}">
+                            <label class="form-check-label fw-bold">Es original</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" rows="2"
+                                  th:field="*{obsCremallera}"
+                                  placeholder="Estado de la cremallera..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-5">
+            <a th:href="@{'/ordenes/' + ${orden.id}}" class="btn btn-outline-secondary btn-lg px-4">Cancelar</a>
+            <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">Guardar cambios</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

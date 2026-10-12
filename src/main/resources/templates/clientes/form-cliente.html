@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Editar cliente</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width:560px">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-3">Editar cliente</h2>
+            <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}">Error</div>
+            <form th:action="@{'/clientes/' + ${cliente.id} + '/editar'}" method="post">
+                <div class="mb-3">
+                    <label for="nombre" class="form-label fw-semibold">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" class="form-control" th:value="${cliente.nombre}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="rut" class="form-label fw-semibold">RUT <span class="text-muted fw-normal">(opcional)</span></label>
+                    <input type="text" id="rut" name="rut" class="form-control" th:value="${cliente.rut}" placeholder="12.345.678-5">
+                </div>
+                <div class="mb-3">
+                    <label for="telefono" class="form-label fw-semibold">Teléfono</label>
+                    <input type="tel" id="telefono" name="telefono" class="form-control" th:value="${cliente.telefono}" placeholder="+56 9 ...">
+                    <small class="text-muted">Con +56 para que funcione el aviso por WhatsApp.</small>
+                </div>
+                <div class="mb-4">
+                    <label for="relacionVehiculo" class="form-label fw-semibold">Relación con el vehículo</label>
+                    <input type="text" id="relacionVehiculo" name="relacionVehiculo" class="form-control"
+                           th:value="${cliente.relacionVehiculo}" placeholder="Ej: Dueño, Empresa">
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{'/clientes/' + ${cliente.id}}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary flex-grow-1">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

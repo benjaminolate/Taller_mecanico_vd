@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Firma</title>
+    <style>
+        #lienzo {
+            width: 100%;
+            height: 240px;
+            border: 2px dashed #6c757d;
+            border-radius: .5rem;
+            background: #fff;
+            touch-action: none;          /* que el dedo dibuje en vez de mover la página */
+            cursor: crosshair;
+        }
+        .resumen dt { font-weight: 600; color: #6c757d; font-size: .85rem; text-transform: uppercase; }
+        .resumen dd { font-size: 1.1rem; margin-bottom: .6rem; }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="fw-bold text-secondary mb-1">
+        <span th:text="${'Firma de ' + momento.etiqueta.toLowerCase()}">Firma</span>
+        <span class="text-primary" th:text="${orden.id}">ORD-001</span>
+    </h2>
+    <p class="text-muted mb-3" th:text="${momento.descripcion}">Descripción</p>
+
+    <div th:if="${error}" class="alert alert-danger fs-5" th:text="${error}">Error</div>
+
+    <div class="row g-4">
+        <!-- Resumen que el cliente revisa antes de firmar -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <dl class="resumen mb-0">
+                        <dt>Cliente</dt>
+                        <dd th:text="${orden.cliente.nombre}">Cliente</dd>
+                        <th:block th:if="${orden.vehiculo != null}">
+                            <dt>Vehículo</dt>
+                            <dd th:text="${orden.vehiculo.patente + ' · ' + orden.vehiculo.marca + ' ' + orden.vehiculo.modelo}">Vehículo</dd>
+                        </th:block>
+                        <dt>Mecánico responsable</dt>
+                        <dd th:text="${orden.mecanico != null ? orden.mecanico.nombre : '—'}">—</dd>
+
+                        <!-- Recepción: estado en que llega -->
+                        <th:block th:if="${momento.name() == 'RECEPCION' and orden.estadoVehiculo != null}">
+                            <dt>Estado al ingreso</dt>
+                            <dd>
+                                <span th:if="${orden.estadoVehiculo.rayones}" class="badge text-bg-warning me-1">Rayones</span>
+                                <span th:if="${orden.estadoVehiculo.golpes}" class="badge text-bg-warning me-1">Golpes</span>
+                                <span th:if="${orden.estadoVehiculo.nivelAceiteBajo}" class="badge text-bg-warning me-1">Aceite bajo</span>
+                                <span th:if="${orden.estadoVehiculo.nivelAguaBajo}" class="badge text-bg-warning me-1">Agua baja</span>
+                                <span th:if="${orden.estadoVehiculo.nivelCombustible != null}"
+                                      class="badge text-bg-light border me-1"
+                                      th:text="${'Combustible ' + orden.estadoVehiculo.nivelCombustible + '%'}">Combustible</span>
+                                <div class="small text-muted mt-1" th:text="${orden.estadoVehiculo.obsGenerales}"></div>
+                            </dd>
+                        </th:block>
+                        <th:block th:if="${momento.name() == 'RECEPCION' and orden.estadoCremallera != null}">
+                            <dt>Estado de la cremallera</dt>
+                            <dd>
+                                <span th:if="${orden.estadoCremallera.dienteDaniados}" class="badge text-bg-warning me-1">Dientes dañados</span>
+                                <span th:if="${orden.estadoCremallera.fugasAceite}" class="badge text-bg-warning me-1">Fugas de aceite</span>
+                                <span th:if="${orden.estadoCremallera.juegoExcesivo}" class="badge text-bg-warning me-1">Juego excesivo</span>
+                                <span th:if="${orden.estadoCremallera.bujesGastados}" class="badge text-bg-warning me-1">Bujes gastados</span>
+                                <div class="small text-muted mt-1" th:text="${orden.estadoCremallera.obsCremallera}"></div>
+                            </dd>
+                        </th:block>
+
+                        <!-- Retiro: trabajos realizados -->
+                        <th:block th:if="${momento.name() == 'RETIRO'}">
+                            <dt>Trabajos realizados</dt>
+                            <dd>
+                                <ul class="mb-1 ps-3">
+                                    <li th:each="t : ${trabajos}">
+                                        <span th:text="${t.descripcion}">Trabajo</span>
+                                        <span class="text-muted" th:if="${t.costoEstimado != null}"
+                                              th:text="${' — $' + #numbers.formatDecimal(t.costoEstimado, 1, 'POINT', 0, 'COMMA')}"></span>
+                                    </li>
+                                </ul>
+                                <strong th:text="${'Total: $' + #numbers.formatDecimal(costoTotal, 1, 'POINT', 0, 'COMMA')}">Total</strong>
+                            </dd>
+                        </th:block>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Firma -->
+        <div class="col-lg-7">
+            <form id="formFirma" th:action="@{'/ordenes/' + ${orden.id} + '/firmar/' + ${momento.ruta}}" method="post">
+                <input type="hidden" name="volver" th:value="${volver}">
+                <input type="hidden" name="imagen" id="imagen">
+                <input type="hidden" name="accion" id="accion" value="firmar">
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-7">
+                        <label for="nombre" class="form-label fw-semibold">Nombre de quien firma</label>
+                        <input type="text" id="nombre" name="nombre" class="form-control form-control-lg" th:value="${nombre}">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="rut" class="form-label fw-semibold">RUT <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="text" id="rut" name="rut" class="form-control form-control-lg" th:value="${rut}" placeholder="12.345.678-5">
+                    </div>
+                </div>
+
+                <label class="form-label fw-semibold">Firme aquí con el dedo</label>
+                <canvas id="lienzo"></canvas>
+                <div class="d-flex justify-content-end mt-1">
+                    <button type="button" id="limpiar" class="btn btn-outline-secondary">Borrar firma</button>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex mt-4">
+                    <a th:href="@{${volver}}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                    <button type="button" id="sinFirma" class="btn btn-outline-warning btn-lg">Continuar sin firma</button>
+                    <button type="button" id="firmar" class="btn btn-success btn-lg flex-md-grow-1">Guardar firma</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // Recuadro de firma con Pointer Events: funciona con dedo, lápiz y mouse.
+    document.addEventListener('DOMContentLoaded', function () {
+        const lienzo = document.getElementById('lienzo');
+        const ctx = lienzo.getContext('2d');
+        let dibujando = false;
+        let hayTrazo = false;
+
+        function ajustarTamano() {
+            // Resolución real de la pantalla para que el trazo no salga borroso
+            const escala = window.devicePixelRatio || 1;
+            const r = lienzo.getBoundingClientRect();
+            lienzo.width = r.width * escala;
+            lienzo.height = r.height * escala;
+            ctx.setTransform(escala, 0, 0, escala, 0, 0);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000';
+            hayTrazo = false;
+        }
+        function punto(e) {
+            const r = lienzo.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+        }
+        lienzo.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            lienzo.setPointerCapture(e.pointerId);
+            dibujando = true;
+            const p = punto(e);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+        });
+        lienzo.addEventListener('pointermove', e => {
+            if (!dibujando) return;
+            const p = punto(e);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            hayTrazo = true;
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+            lienzo.addEventListener(ev, () => { dibujando = false; }));
+
+        document.getElementById('limpiar').addEventListener('click', () => {
+            ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+            hayTrazo = false;
+        });
+        document.getElementById('firmar').addEventListener('click', () => {
+            if (!hayTrazo) { alert('Firme en el recuadro o elija "Continuar sin firma".'); return; }
+            if (!document.getElementById('nombre').value.trim()) { alert('Escriba el nombre de quien firma.'); return; }
+            document.getElementById('imagen').value = lienzo.toDataURL('image/png');
+            document.getElementById('accion').value = 'firmar';
+            document.getElementById('formFirma').submit();
+        });
+        document.getElementById('sinFirma').addEventListener('click', () => {
+            if (!confirm('¿Registrar sin firma del cliente?')) return;
+            document.getElementById('imagen').value = '';
+            document.getElementById('accion').value = 'sin-firma';
+            document.getElementById('formFirma').submit();
+        });
+
+        ajustarTamano();
+        // Solo se reajusta si cambia el ancho (girar la tablet). Al abrirse el teclado
+        // cambia solo el alto de la ventana y no debe borrarse la firma.
+        let anchoAnterior = lienzo.getBoundingClientRect().width;
+        window.addEventListener('resize', () => {
+            const ancho = lienzo.getBoundingClientRect().width;
+            if (Math.abs(ancho - anchoAnterior) > 1) {
+                anchoAnterior = ancho;
+                ajustarTamano();
+            }
+        });
+    });
+    </script>
+</div>
+</body>
+</html>

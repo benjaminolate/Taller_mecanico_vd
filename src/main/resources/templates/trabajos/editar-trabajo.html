@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Editar trabajo</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width:620px">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-1">Editar trabajo</h2>
+            <p class="text-muted mb-3">
+                Orden <a th:href="@{'/ordenes/' + ${orden.id} + '/trabajos'}" th:text="${orden.id}">ORD-001</a>
+                <span th:if="${trabajo.creadoPor != null}" th:text="${' · registrado por ' + trabajo.creadoPor}"></span>
+            </p>
+            <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}">Error</div>
+
+            <form th:action="@{'/ordenes/' + ${orden.id} + '/trabajos/' + ${trabajo.id} + '/editar'}"
+                  th:object="${trabajoForm}" method="post" novalidate>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
+                    <select class="form-select" th:field="*{categoria}"
+                            th:classappend="${#fields.hasErrors('categoria')} ? 'is-invalid'">
+                        <option value="">Seleccione...</option>
+                        <option th:each="cat : ${categorias}" th:value="${cat}" th:text="${cat}"></option>
+                    </select>
+                    <div class="invalid-feedback" th:errors="*{categoria}"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
+                    <textarea class="form-control" rows="3" th:field="*{descripcion}"
+                              th:classappend="${#fields.hasErrors('descripcion')} ? 'is-invalid'"></textarea>
+                    <div class="invalid-feedback" th:errors="*{descripcion}"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-7">
+                        <label class="form-label fw-semibold">Mecánico responsable</label>
+                        <select class="form-select" th:field="*{mecanicoId}">
+                            <option value="">-- Sin asignar --</option>
+                            <option th:each="m : ${mecanicos}" th:value="${m.id}"
+                                    th:text="${m.nombre + (m.estadoActivo ? '' : ' (inactivo)')}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Costo ($)</label>
+                        <input type="number" class="form-control" th:field="*{costoEstimado}" min="0" step="1"
+                               th:classappend="${#fields.hasErrors('costoEstimado')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{costoEstimado}"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Observaciones</label>
+                    <textarea class="form-control" rows="2" th:field="*{observaciones}"></textarea>
+                </div>
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" th:field="*{completado}">
+                    <label class="form-check-label">Completado</label>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{'/ordenes/' + ${orden.id} + '/trabajos'}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary flex-grow-1">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

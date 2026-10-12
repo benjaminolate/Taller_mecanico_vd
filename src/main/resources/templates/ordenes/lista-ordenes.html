@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Historial</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary">Historial de Órdenes</h2>
+        <a th:href="@{/ordenes/nueva}" class="btn btn-primary fw-bold">+ Nueva Orden</a>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         PANEL DE FILTROS AVANZADOS
+         GET + th:object="${criterios}" (bindea contra OrdenBusquedaDTO).
+         Todos los campos son opcionales y se combinan con AND en el backend.
+         ════════════════════════════════════════════════════════════════════ -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 pb-0">
+            <h6 class="text-uppercase text-muted fw-bold small mb-0">Filtros avanzados</h6>
+        </div>
+        <div class="card-body bg-light">
+            <form th:action="@{/ordenes/lista}" th:object="${criterios}" method="GET" class="row g-3">
+
+                <!-- Reinicia a la página 0 en cada nueva búsqueda; el tamaño de página se conserva -->
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" th:field="*{size}">
+                <!-- La búsqueda se hace dentro de la pestaña que está abierta -->
+                <input type="hidden" name="vista" th:value="${vistaActual}">
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Patente</label>
+                    <input type="text" th:field="*{patente}" class="form-control"
+                           placeholder="Ej: DEMO01">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Cliente (Nombre)</label>
+                    <input type="text" th:field="*{clienteNombre}" class="form-control"
+                           placeholder="Nombre del cliente">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Cliente (RUT)</label>
+                    <input type="text" th:field="*{clienteRut}" class="form-control"
+                           placeholder="Ej: 12.345.678-9">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Mecánico asignado</label>
+                    <select th:field="*{mecanicoId}" class="form-select">
+                        <option value="">Todos los mecánicos</option>
+                        <option th:each="m : ${mecanicos}"
+                                th:value="${m.id}"
+                                th:text="${m.nombre + (m.estadoActivo ? '' : ' (inactivo)')}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Fecha desde</label>
+                    <input type="date" th:field="*{fechaDesde}" class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Fecha hasta</label>
+                    <input type="date" th:field="*{fechaHasta}" class="form-control">
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold flex-fill">Buscar</button>
+                    <a th:href="@{/ordenes/lista(vista=${vistaActual})}" class="btn btn-outline-secondary flex-fill">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${mensajeExito}" class="alert alert-success" th:text="${mensajeExito}">Listo.</div>
+    <div th:if="${mensajeError}" class="alert alert-danger" th:text="${mensajeError}">Error.</div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         PESTAÑAS POR ESTADO — cada una conserva los filtros de arriba
+         ════════════════════════════════════════════════════════════════════ -->
+    <ul class="nav nav-pills flex-wrap gap-1 mb-3" id="pestanas-estado">
+        <li class="nav-item" th:each="v : ${vistas}">
+            <a class="nav-link d-flex align-items-center gap-2"
+               th:classappend="${v == vistaActual} ? 'active' : 'bg-white border'"
+               th:href="@{/ordenes/lista(vista=${v}, size=${criterios.size},
+                                          patente=${criterios.patente}, clienteNombre=${criterios.clienteNombre},
+                                          clienteRut=${criterios.clienteRut}, mecanicoId=${criterios.mecanicoId},
+                                          fechaDesde=${criterios.fechaDesde}, fechaHasta=${criterios.fechaHasta})}">
+                <span th:text="${v.etiqueta}">Por hacer</span>
+                <span class="badge rounded-pill"
+                      th:classappend="${v == vistaActual} ? 'bg-light text-dark' : 'bg-secondary'"
+                      th:text="${conteoVistas.get(v)}">0</span>
+            </a>
+        </li>
+    </ul>
+    <p class="small text-muted mb-3" th:if="${vistaActual.masAntiguasPrimero}">
+        Ordenadas de la más antigua a la más nueva. Días en el taller:
+        <span class="badge bg-secondary">0–2</span>
+        <span class="badge bg-warning text-dark">3–6</span>
+        <span class="badge bg-danger">7 o más</span>
+    </p>
+
+    <!-- Resumen de resultados -->
+    <div class="d-flex justify-content-between align-items-center mb-2" th:if="${ordenesPage.totalElements > 0}">
+        <span class="text-muted small">
+            <span th:text="${ordenesPage.totalElements}">0</span> orden(es) encontrada(s) ·
+            página <span th:text="${ordenesPage.number + 1}">1</span> de
+            <span th:text="${ordenesPage.totalPages}">1</span>
+        </span>
+    </div>
+
+    <!-- Resultado vacío -->
+    <div th:if="${#lists.isEmpty(ordenes)}" class="alert alert-info">
+        No hay órdenes en esta pestaña con los filtros aplicados.
+    </div>
+
+    <!-- Tabla de órdenes -->
+    <div class="card shadow-sm border-0" th:unless="${#lists.isEmpty(ordenes)}">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Patente</th>
+                            <th>Cliente</th>
+                            <th>Mecánico</th>
+                            <th>Estado</th>
+                            <th class="text-center">En el taller</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="orden : ${ordenes}">
+                            <td class="fw-bold text-primary" th:text="${orden.id}">ORD-001</td>
+                            <td th:text="${#temporals.format(orden.fecha, 'dd-MM-yyyy HH:mm')}">
+                                01-01-2026
+                            </td>
+                            <td>
+                                <span th:text="${orden.tipoIngreso}"
+                                      th:classappend="${orden.tipoIngreso?.name() == 'VEHICULO'}
+                                                       ? 'badge bg-primary' : 'badge bg-info text-dark'">
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary text-uppercase"
+                                      th:text="${orden.vehiculo != null ? orden.vehiculo.patente : 'N/A'}">
+                                    DEMO01
+                                </span>
+                            </td>
+                            <td th:text="${orden.cliente?.nombre}">Cliente</td>
+                            <td class="small">
+                                <!-- Mecánico que realiza el trabajo: si falta, se asigna aquí mismo -->
+                                <span th:if="${orden.mecanico != null}" th:text="${orden.mecanico.nombre}">Mecánico</span>
+                                <form th:if="${orden.mecanico == null}"
+                                      th:action="@{'/ordenes/' + ${orden.id} + '/mecanico'}" method="post"
+                                      class="d-flex gap-1 asignar-mecanico" style="min-width:180px">
+                                    <input type="hidden" name="volver" th:value="${urlActual}">
+                                    <select name="mecanicoId" class="form-select form-select-sm border-warning" required
+                                            th:attr="aria-label=${'Mecánico para ' + orden.id}">
+                                        <option value="">Sin asignar</option>
+                                        <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"></option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Asignar</button>
+                                </form>
+                                <div class="text-muted" th:if="${orden.recibidoPor != null}"
+                                     th:text="${'Recibió: ' + orden.recibidoPor.nombre}">Recibió: —</div>
+                            </td>
+                            <td>
+                                <!--
+                                    Colores según EstadoOrden: PENDIENTE=warning,
+                                    EN_PROCESO=info, LISTO=success, ENTREGADO=secondary
+                                -->
+                                <span th:text="${orden.estado?.etiqueta}"
+                                      th:class="${'badge ' +
+                                        (orden.estado?.name() == 'PENDIENTE'   ? 'bg-warning text-dark' :
+                                         orden.estado?.name() == 'EN_PROCESO'  ? 'bg-info text-dark'    :
+                                         orden.estado?.name() == 'LISTO'       ? 'bg-success'           :
+                                         'bg-secondary')}">
+                                    ESTADO
+                                </span>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <span th:if="${orden.estado?.name() == 'ENTREGADO'}" class="small text-muted">Entregada</span>
+                                <span th:unless="${orden.estado?.name() == 'ENTREGADO'}"
+                                      th:with="d=${orden.diasDesdeIngreso}"
+                                      th:class="${'badge ' + (d >= 7 ? 'bg-danger' : (d >= 3 ? 'bg-warning text-dark' : 'bg-secondary'))}"
+                                      th:text="${d == 0 ? 'Hoy' : (d == 1 ? '1 día' : d + ' días')}">0 días</span>
+                            </td>
+                            <td class="text-center">
+                                <a th:href="@{'/ordenes/' + ${orden.id}}"
+                                   class="btn btn-sm btn-outline-primary me-1">Ver</a>
+                                <a th:href="@{'/ordenes/' + ${orden.id} + '/pdf'}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   target="_blank">PDF</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         PAGINACIÓN — conserva todos los filtros activos en cada link
+         ════════════════════════════════════════════════════════════════════ -->
+    <nav th:if="${ordenesPage.totalPages > 1}" aria-label="Paginación de órdenes" class="mt-3">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${ordenesPage.first} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/ordenes/lista(page=${ordenesPage.number - 1}, size=${criterios.size},
+                                              patente=${criterios.patente}, clienteNombre=${criterios.clienteNombre},
+                                              clienteRut=${criterios.clienteRut}, mecanicoId=${criterios.mecanicoId},
+                                              vista=${vistaActual}, fechaDesde=${criterios.fechaDesde},
+                                              fechaHasta=${criterios.fechaHasta})}">Anterior</a>
+            </li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, ordenesPage.totalPages - 1)}"
+                th:classappend="${i == ordenesPage.number} ? 'active'">
+                <a class="page-link"
+                   th:href="@{/ordenes/lista(page=${i}, size=${criterios.size},
+                                              patente=${criterios.patente}, clienteNombre=${criterios.clienteNombre},
+                                              clienteRut=${criterios.clienteRut}, mecanicoId=${criterios.mecanicoId},
+                                              vista=${vistaActual}, fechaDesde=${criterios.fechaDesde},
+                                              fechaHasta=${criterios.fechaHasta})}"
+                   th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${ordenesPage.last} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/ordenes/lista(page=${ordenesPage.number + 1}, size=${criterios.size},
+                                              patente=${criterios.patente}, clienteNombre=${criterios.clienteNombre},
+                                              clienteRut=${criterios.clienteRut}, mecanicoId=${criterios.mecanicoId},
+                                              vista=${vistaActual}, fechaDesde=${criterios.fechaDesde},
+                                              fechaHasta=${criterios.fechaHasta})}">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>

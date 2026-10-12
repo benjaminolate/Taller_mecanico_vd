@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es"
+        xmlns:th="http://www.thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+<head>
+    <title>Nueva Orden</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary">Registrar Nueva Orden</h2>
+        <a th:href="@{/ordenes/lista}" class="btn btn-outline-secondary">Ver Historial</a>
+    </div>
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <strong>Error:</strong> <span th:text="${error}">Detalle del error.</span>
+    </div>
+    <form th:action="@{/ordenes/guardar}"
+            th:object="${ordenRequest}"
+            method="POST"
+            novalidate>
+        <!-- ── Sección 1: Datos del Cliente ──────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">1. Datos del Cliente</h5>
+            </div>
+            <div class="card-body">
+                <!-- Opción A: Cliente existente (select) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Cliente existente (opcional)</label>
+                    <select class="form-select" th:field="*{clienteId}">
+                        <option value="">-- Crear nuevo cliente --</option>
+                        <option th:each="c : ${clientes}"
+                                th:value="${c.id}"
+                                th:text="${c.nombre + ' - ' + (c.telefono ?: 'Sin tel.')}">
+                        </option>
+                    </select>
+                    <small class="text-muted">
+                        Al seleccionar un cliente, Nombre y Teléfono se completan automáticamente
+                        (puedes seguir editándolos, por ejemplo si cambió de número).
+                    </small>
+                </div>
+                <!-- Opción B: Datos de nuevo cliente -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            Nombre del cliente <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{clienteNombre}"
+                               th:classappend="${#fields.hasErrors('clienteNombre')} ? 'is-invalid'"
+                               placeholder="Ej. Juan Pérez">
+                        <div class="invalid-feedback" th:errors="*{clienteNombre}"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">RUT</label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{clienteRut}"
+                               placeholder="12.345.678-5">
+                        <small class="text-muted">Opcional. Si ya existe, se usa ese cliente.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Teléfono</label>
+                        <input type="tel"
+                               class="form-control"
+                               th:field="*{clienteTelefono}"
+                               placeholder="+56 9 ...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Relación con el vehículo</label>
+                        <input type="text"
+                               class="form-control"
+                               th:field="*{clienteRelacionVehiculo}"
+                               placeholder="Ej. Dueño, Empresa">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Sección 2: Tipo de Ingreso y Vehículo ─────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">2. Tipo de Ingreso y Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            Tipo de Ingreso <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select"
+                                th:field="*{tipoIngreso}"
+                                th:classappend="${#fields.hasErrors('tipoIngreso')} ? 'is-invalid'"
+                                required>
+                            <option value="">Seleccione...</option>
+                            <option th:each="tipo : ${tiposIngreso}"
+                                    th:value="${tipo}"
+                                    th:text="${tipo == T(com.taller.mecanico.enums.TipoIngreso).VEHICULO}
+                                              ? 'Vehículo Completo' : 'Cremallera Suelta'">
+                            </option>
+                        </select>
+                        <div class="invalid-feedback" th:errors="*{tipoIngreso}"></div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Patente</label>
+                        <input type="text"
+                               class="form-control text-uppercase"
+                               th:field="*{vehiculoPatente}"
+                               placeholder="DEMO01">
+                        <small class="text-muted">Al salir del campo se busca el historial del vehículo.</small>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Marca</label>
+                        <input type="text" class="form-control" th:field="*{vehiculoMarca}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Modelo</label>
+                        <input type="text" class="form-control" th:field="*{vehiculoModelo}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold">Año</label>
+                        <input type="number" class="form-control"
+                               th:field="*{vehiculoAnio}" placeholder="2020">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Tipo Vehículo</label>
+                        <select class="form-select" th:field="*{vehiculoTipo}">
+                            <option value="">-</option>
+                            <option th:each="tv : ${tiposVehiculo}"
+                                    th:value="${tv}"
+                                    th:text="${tv}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Recepción ───────────────────────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Recepción</h5>
+            </div>
+            <div class="card-body">
+                <label class="form-label fw-bold" for="recibidoPorId">¿Quién recibe el vehículo? <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{recibidoPorId}"
+                        th:classappend="${#fields.hasErrors('recibidoPorId')} ? 'is-invalid'" style="max-width:420px">
+                    <option value="">Seleccione...</option>
+                    <option th:each="m : ${mecanicosActivos}" th:value="${m.id}" th:text="${m.nombre}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{recibidoPorId}"></div>
+                <small class="text-muted d-block mt-1">
+                    El mecánico que realizará el trabajo se asigna después, desde el historial o el detalle de la orden.
+                </small>
+                <small class="text-muted d-block mt-1" th:if="${#lists.isEmpty(mecanicosActivos)}">
+                    No hay mecánicos activos. El jefe debe agregarlos en Administración &gt; Mecánicos.
+                </small>
+            </div>
+        </div>
+        <!-- ── Sección 3: Estado del Vehículo ─────────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">3. Estado Visual del Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{rayones}">
+                            <label class="form-check-label">Rayones visibles</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{golpes}">
+                            <label class="form-check-label">Golpes</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{nivelAceiteBajo}">
+                            <label class="form-check-label">Nivel aceite bajo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{nivelAguaBajo}">
+                            <label class="form-check-label">Nivel agua bajo</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Combustible (%)</label>
+                        <input type="number" class="form-control"
+                               th:field="*{nivelCombustible}"
+                               min="0" max="100" placeholder="75">
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label fw-bold">Observaciones generales</label>
+                        <textarea class="form-control" rows="2"
+                                  th:field="*{obsGenerales}"
+                                  placeholder="Estado general del vehículo al ingreso..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Sección 4: Estado de la Cremallera ─────────────────────── -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">4. Diagnóstico de Cremallera</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{dienteDaniados}">
+                            <label class="form-check-label">Dientes dañados</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{fugasAceite}">
+                            <label class="form-check-label">Fugas de aceite</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{juegoExcesivo}">
+                            <label class="form-check-label">Juego excesivo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   role="switch" th:field="*{bujesGastados}">
+                            <label class="form-check-label">Bujes gastados</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Marca Cremallera</label>
+                        <input type="text" class="form-control"
+                               th:field="*{marcaCremallera}" placeholder="Ej. TRW">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox"
+                                   th:field="*{esOriginal}">
+                            <label class="form-check-label fw-bold">Es original</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" rows="2"
+                                  th:field="*{obsCremallera}"
+                                  placeholder="Estado de la cremallera..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── Botón guardar ──────────────────────────────────────────── -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-5">
+            <a th:href="@{/ordenes/lista}" class="btn btn-outline-secondary btn-lg px-4">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm">
+                Guardar Orden de Ingreso
+            </button>
+        </div>
+    </form>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Autocompletado de cliente e historial de vehículo por patente.
+         Vanilla JS con Fetch API. th:field ya genera id="clienteId",
+         id="clienteNombre", id="clienteTelefono", id="vehiculoPatente",
+         id="vehiculoMarca", id="vehiculoModelo", id="vehiculoAnio"
+         automáticamente (Thymeleaf usa el nombre de la propiedad como id).
+    ══════════════════════════════════════════════════════════════════ -->
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ── Requerimiento 1: Autocompletado de Cliente ──────────────────
+        const selectCliente = document.getElementById('clienteId');
+        const inputNombre   = document.getElementById('clienteNombre');
+        const inputTelefono = document.getElementById('clienteTelefono');
+        const inputRut      = document.getElementById('clienteRut');
+        const inputRelacion = document.getElementById('clienteRelacionVehiculo');
+
+        selectCliente.addEventListener('change', function () {
+            const clienteId = this.value;
+            if (!clienteId) {
+                // "-- Crear nuevo cliente --": limpiamos para que el recepcionista digite
+                inputNombre.value = '';
+                inputTelefono.value = '';
+                inputRut.value = '';
+                inputRelacion.value = '';
+                return;
+            }
+            fetch(`/ordenes/api/clientes/${clienteId}`)
+                .then(resp => {
+                    if (!resp.ok) throw new Error('Cliente no encontrado');
+                    return resp.json();
+                })
+                .then(cliente => {
+                    inputNombre.value   = cliente.nombre   ?? '';
+                    inputTelefono.value = cliente.telefono ?? '';
+                    inputRut.value      = cliente.rut      ?? '';
+                    inputRelacion.value = cliente.relacionVehiculo ?? '';
+                    // Los campos quedan editables: no se agrega readonly/disabled.
+                })
+                .catch(err => console.error('Error al cargar cliente:', err));
+        });
+
+        // ── Requerimiento 2: Historial de Vehículo por Patente ──────────
+        const inputPatente = document.getElementById('vehiculoPatente');
+        const inputMarca   = document.getElementById('vehiculoMarca');
+        const inputModelo  = document.getElementById('vehiculoModelo');
+        const inputAnio    = document.getElementById('vehiculoAnio');
+
+        inputPatente.addEventListener('blur', function () {
+            // Misma normalización que el servidor: mayúsculas, sin espacios ni guiones
+            const patente = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            this.value = patente;
+            if (patente.length < 5) return; // patentes chilenas: mínimo ~6 caracteres
+
+            fetch(`/ordenes/api/vehiculos/patente/${encodeURIComponent(patente)}`)
+                .then(resp => {
+                    if (resp.status === 404) return null; // vehículo nuevo, no es error
+                    if (!resp.ok) throw new Error('Error al consultar patente');
+                    return resp.json();
+                })
+                .then(vehiculo => {
+                    if (!vehiculo) return; // no existe: se deja que el recepcionista lo ingrese
+                    inputMarca.value  = vehiculo.marca  ?? '';
+                    inputModelo.value = vehiculo.modelo ?? '';
+                    inputAnio.value   = vehiculo.anio   ?? '';
+                    const selectTipo = document.getElementById('vehiculoTipo');
+                    if (selectTipo && vehiculo.tipoVehiculo) selectTipo.value = vehiculo.tipoVehiculo;
+                    // Los campos quedan editables por si hubo cambios (repintado, etc.)
+                })
+                .catch(err => console.error('Error al buscar vehículo:', err));
+        });
+    });
+    </script>
+</div>
+</body>
+</html>

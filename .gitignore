@@ -1,0 +1,97 @@
+# ============================================================
+# .gitignore - Java / Maven / Gradle / IDEs / secretos
+# ============================================================
+
+# --- Maven ---
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# --- Gradle ---
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# --- Java compilado y empaquetado ---
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# --- Eclipse / Spring Tools ---
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# --- NetBeans ---
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# --- VS Code ---
+.vscode/
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Secretos y configuración local (nunca se suben) ---
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+*.pem
+*.key
+*.p12
+*.jks
+
+# --- Bases de datos locales, respaldos y volcados ---
+*.db
+*.mv.db
+*.trace.db
+*.sql.gz
+*.dump
+*.backup
+*.bak
+
+# --- Documentos generados por la app (órdenes en PDF, firmas) ---
+*.pdf
+
+# --- Herramientas que no son parte del código ---
+repomix-output.*
+.github/modernize/

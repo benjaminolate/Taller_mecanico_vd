@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Orden Confirmada</title>
+</head>
+<body>
+
+<div layout:fragment="content" class="text-center py-5">
+
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 520px;">
+        <div class="card-body p-5">
+            <div class="display-1 text-success mb-3">✅</div>
+            <h3 class="fw-bold text-secondary">¡Orden Registrada!</h3>
+            <p class="text-muted mt-2">
+                La orden de ingreso ha sido guardada exitosamente.
+            </p>
+
+            <!-- Muestra el ID de la orden creada si está disponible -->
+            <div th:if="${orden != null}" class="alert alert-success mt-3">
+                <strong>N° de Orden:</strong>
+                <span class="fs-5 fw-bold" th:text="${orden.id}">ORD-001</span>
+                <br>
+                <small th:text="${'Cliente: ' + orden.cliente?.nombre}">Cliente: —</small>
+            </div>
+
+            <div class="mt-4 d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a th:href="@{/ordenes/nueva}" class="btn btn-outline-primary px-4">
+                    Ingresar Otra Orden
+                </a>
+                <a th:href="@{/ordenes/lista}" class="btn btn-primary px-4">
+                    Ir al Historial
+                </a>
+                <!-- Botón de PDF disponible si tenemos la orden -->
+                <a th:if="${orden != null}"
+                   th:href="@{'/ordenes/' + ${orden.id} + '/pdf'}"
+                   class="btn btn-outline-danger px-4"
+                   target="_blank">
+                    Imprimir PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Cliente</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-secondary mb-0" th:text="${cliente.nombre}">Cliente</h2>
+        <div>
+            <a th:href="@{'/clientes/' + ${cliente.id} + '/editar'}" class="btn btn-outline-primary me-2">Editar datos</a>
+            <a th:href="@{/clientes}" class="btn btn-outline-secondary">Volver</a>
+        </div>
+    </div>
+    <div th:if="${mensajeExito}" class="alert alert-success" th:text="${mensajeExito}">Listo.</div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body row g-3">
+            <div class="col-md-3">
+                <p class="text-muted mb-1 small fw-bold text-uppercase">RUT</p>
+                <p class="fw-bold mb-0" th:text="${cliente.rut ?: 'No registrado'}">—</p>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted mb-1 small fw-bold text-uppercase">Teléfono</p>
+                <p class="fw-bold mb-0" th:text="${cliente.telefono ?: 'No registrado'}">—</p>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted mb-1 small fw-bold text-uppercase">Relación con el vehículo</p>
+                <p class="fw-bold mb-0" th:text="${cliente.relacionVehiculo ?: '—'}">—</p>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted mb-1 small fw-bold text-uppercase">Órdenes</p>
+                <p class="fw-bold mb-0" th:text="${#lists.size(ordenes)}">0</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="h5 fw-bold mb-3">Historial de órdenes</h3>
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>Vehículo</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(ordenes)}">
+                    <td colspan="6" class="text-center text-muted py-4">Este cliente aún no tiene órdenes.</td>
+                </tr>
+                <tr th:each="o : ${ordenes}">
+                    <td class="fw-bold text-primary" th:text="${o.id}">ORD-001</td>
+                    <td th:text="${#temporals.format(o.fecha, 'dd-MM-yyyy HH:mm')}">fecha</td>
+                    <td th:text="${o.tipoIngreso == T(com.taller.mecanico.enums.TipoIngreso).VEHICULO ? 'Vehículo' : 'Cremallera'}">Tipo</td>
+                    <td th:text="${o.vehiculo != null ? o.vehiculo.patente + ' · ' + o.vehiculo.marca + ' ' + o.vehiculo.modelo : '—'}">—</td>
+                    <td><span class="badge text-bg-secondary" th:text="${o.estado.etiqueta}">Estado</span></td>
+                    <td class="text-end">
+                        <a th:href="@{'/ordenes/' + ${o.id}}" class="btn btn-sm btn-outline-primary">Ver</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

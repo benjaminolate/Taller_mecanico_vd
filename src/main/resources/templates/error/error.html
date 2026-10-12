@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Error</title>
+</head>
+<body>
+<div layout:fragment="content" class="py-5 text-center">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 560px;">
+        <div class="card-body p-5">
+            <div class="display-1 text-danger mb-3">⚠️</div>
+            <h3 class="fw-bold" th:text="${titulo ?: 'Error'}">Error del sistema</h3>
+            <p class="text-muted mt-3" th:text="${mensaje ?: 'Ocurrió un error inesperado.'}">
+                Detalle del error.
+            </p>
+            <div class="mt-4">
+                <a th:href="@{/ordenes/lista}" class="btn btn-primary px-4">Volver al inicio</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

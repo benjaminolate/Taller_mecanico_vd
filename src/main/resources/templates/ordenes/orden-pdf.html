@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+    ESTA PLANTILLA ES PROCESADA POR FLYING SAUCER (XHTMLRENDERER), NO POR EL NAVEGADOR.
+    Debe ser XHTML válido: etiquetas cerradas, atributos en minúscula, sin HTML5.-->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Orden de Ingreso</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.5;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; }
+        .header td { vertical-align: top; }
+        .title-doc { font-size: 20px; font-weight: bold; text-align: right; color: #2c3e50; }
+        .section-title {
+            background-color: #ecf0f1;
+            padding: 5px 10px;
+            font-weight: bold;
+            border: 1px solid #bdc3c7;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .data-table { margin-bottom: 10px; }
+        .data-table td { padding: 4px; vertical-align: top; }
+        .label { font-weight: bold; width: 130px; color: #555; }
+        .check-row td { padding: 3px 4px; }
+        .check-box { border: 1px solid #555; display: inline-block; width: 12px; height: 12px;
+                     text-align: center; font-size: 10px; margin-right: 4px; }
+        .observations {
+            width: 100%; min-height: 80px; border: 1px solid #bdc3c7;
+            padding: 8px; box-sizing: border-box; margin-bottom: 25px;
+        }
+        .footer-signatures { margin-top: 40px; }
+        .footer-signatures td { width: 50%; padding-top: 10px; text-align: center; vertical-align: bottom; }
+        .signature-line {
+            border-top: 1px solid #000; width: 70%;
+            margin: 0 auto; padding-top: 5px; font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Cabecera del documento -->
+<div class="header">
+    <table>
+        <tr>
+            <td style="width: 60%;">
+                <h2 style="margin: 0; color: #2c3e50;">Taller Demo</h2>
+                <p style="margin: 4px 0 0 0; font-size: 11px;">
+                    Dirección de ejemplo 123, Ciudad Demo<br/>
+                    Teléfono: +56 9 0000 0000 (ficticio)
+                </p>
+            </td>
+            <td class="title-doc" style="width: 40%;">
+                ORDEN DE INGRESO<br/>
+                <span style="font-size: 13px; font-weight: normal;">
+                    N°: <span th:text="${orden.id}">ORD-001</span>
+                </span><br/>
+                <span style="font-size: 13px; font-weight: normal;">
+                    Fecha: <span th:text="${#temporals.format(orden.fecha, 'dd/MM/yyyy HH:mm')}">—</span>
+                </span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Datos del Cliente -->
+<div class="section-title">Datos del Cliente</div>
+<table class="data-table">
+    <tr>
+        <td class="label">Nombre:</td>
+        <td th:text="${orden.cliente?.nombre}">—</td>
+        <td class="label">Relación:</td>
+        <td th:text="${orden.cliente?.relacionVehiculo ?: '—'}">—</td>
+    </tr>
+    <tr>
+        <td class="label">Teléfono:</td>
+        <td th:text="${orden.cliente?.telefono ?: 'No registrado'}">—</td>
+        <td class="label">Estado Orden:</td>
+        <td th:text="${orden.estado.etiqueta}">Pendiente</td>
+    </tr>
+    <tr>
+        <td class="label">RUT:</td>
+        <td th:text="${orden.cliente?.rut ?: '—'}">—</td>
+        <td class="label">Recibido por:</td>
+        <td th:text="${orden.recibidoPor != null ? orden.recibidoPor.nombre : '—'}">—</td>
+    </tr>
+    <tr>
+        <td class="label"></td>
+        <td></td>
+        <td class="label">Mecánico:</td>
+        <td th:text="${orden.mecanico != null ? orden.mecanico.nombre : 'Por asignar'}">—</td>
+    </tr>
+</table>
+
+<!-- Datos del Vehículo (solo si hay vehículo) -->
+<div th:if="${orden.vehiculo != null}">
+    <div class="section-title">Datos del Vehículo</div>
+    <table class="data-table">
+        <tr>
+            <td class="label">Marca / Modelo:</td>
+            <td th:text="${orden.vehiculo.marca + ' ' + orden.vehiculo.modelo}">—</td>
+            <td class="label">Patente:</td>
+            <td th:text="${orden.vehiculo.patente}">—</td>
+        </tr>
+        <tr>
+            <td class="label">Año:</td>
+            <td th:text="${orden.vehiculo.anio ?: '—'}">—</td>
+            <td class="label">Tipo:</td>
+            <td th:text="${orden.vehiculo.tipoVehiculo}">—</td>
+        </tr>
+    </table>
+</div>
+
+<!-- Estado visual del vehículo -->
+<div th:if="${orden.estadoVehiculo != null}">
+    <div class="section-title">Estado Visual al Ingreso</div>
+    <table class="data-table check-row">
+        <tr>
+            <td>
+                <span class="check-box" th:text="${orden.estadoVehiculo.rayones ? 'X' : ''}"> </span>
+                Rayones
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoVehiculo.golpes ? 'X' : ''}"> </span>
+                Golpes
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoVehiculo.nivelAceiteBajo ? 'X' : ''}"> </span>
+                Aceite bajo
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoVehiculo.nivelAguaBajo ? 'X' : ''}"> </span>
+                Agua baja
+            </td>
+            <td>
+                Combustible: <span th:text="${(orden.estadoVehiculo.nivelCombustible ?: '?') + '%'}">—</span>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 4px 0;"><strong>Obs. Generales:</strong>
+        <span th:text="${orden.estadoVehiculo.obsGenerales ?: 'Sin observaciones.'}">—</span>
+    </p>
+</div>
+
+<!-- Estado de la Cremallera -->
+<div th:if="${orden.estadoCremallera != null}">
+    <div class="section-title">Diagnóstico de Cremallera</div>
+    <table class="data-table check-row">
+        <tr>
+            <td>
+                <span class="check-box" th:text="${orden.estadoCremallera.dienteDaniados ? 'X' : ''}"> </span>
+                Dientes dañados
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoCremallera.fugasAceite ? 'X' : ''}"> </span>
+                Fugas aceite
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoCremallera.juegoExcesivo ? 'X' : ''}"> </span>
+                Juego excesivo
+            </td>
+            <td>
+                <span class="check-box" th:text="${orden.estadoCremallera.bujesGastados ? 'X' : ''}"> </span>
+                Bujes gastados
+            </td>
+        </tr>
+    </table>
+    <table class="data-table">
+        <tr>
+            <td class="label">Marca:</td>
+            <td th:text="${orden.estadoCremallera.marcaCremallera ?: '—'}">—</td>
+            <td class="label">¿Original?:</td>
+            <td th:text="${orden.estadoCremallera.esOriginal ? 'Sí' : 'No'}">—</td>
+        </tr>
+    </table>
+    <p style="margin: 4px 0;"><strong>Obs. Cremallera:</strong>
+        <span th:text="${orden.estadoCremallera.obsCremallera ?: 'Sin observaciones.'}">—</span>
+    </p>
+</div>
+
+<!-- Firmas del cliente (tablet) -->
+<table class="footer-signatures">
+    <tr>
+        <td>
+            <div th:if="${firmaRecepcion != null and firmaRecepcion.firmada}" style="height: 70px;">
+                <img th:src="${firmaRecepcion.imagenDataUri}" style="height: 65px;" alt="Firma recepción"/>
+            </div>
+            <div th:unless="${firmaRecepcion != null and firmaRecepcion.firmada}" style="height: 70px;"></div>
+            <div class="signature-line">
+                Firma del cliente — Recepción<br/>
+                <span th:if="${firmaRecepcion == null}" th:text="${orden.cliente?.nombre}">—</span>
+                <span th:if="${firmaRecepcion != null and firmaRecepcion.firmada}"
+                      th:text="${firmaRecepcion.nombreFirmante
+                                + (firmaRecepcion.rutFirmante != null ? ' · ' + firmaRecepcion.rutFirmante : '')
+                                + ' · ' + #temporals.format(firmaRecepcion.creadoEn, 'dd/MM/yyyy HH:mm')}">—</span>
+                <span th:if="${firmaRecepcion != null and !firmaRecepcion.firmada}">Sin firma</span>
+            </div>
+        </td>
+        <td>
+            <div th:if="${firmaRetiro != null and firmaRetiro.firmada}" style="height: 70px;">
+                <img th:src="${firmaRetiro.imagenDataUri}" style="height: 65px;" alt="Firma retiro"/>
+            </div>
+            <div th:unless="${firmaRetiro != null and firmaRetiro.firmada}" style="height: 70px;"></div>
+            <div class="signature-line">
+                Firma del cliente — Retiro conforme<br/>
+                <span th:if="${firmaRetiro == null}">Pendiente</span>
+                <span th:if="${firmaRetiro != null and firmaRetiro.firmada}"
+                      th:text="${firmaRetiro.nombreFirmante
+                                + (firmaRetiro.rutFirmante != null ? ' · ' + firmaRetiro.rutFirmante : '')
+                                + ' · ' + #temporals.format(firmaRetiro.creadoEn, 'dd/MM/yyyy HH:mm')}">—</span>
+                <span th:if="${firmaRetiro != null and !firmaRetiro.firmada}">Sin firma</span>
+            </div>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

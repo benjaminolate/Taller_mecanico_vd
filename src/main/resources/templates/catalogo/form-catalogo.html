@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Tarea del catálogo</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width:520px">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-3" th:text="${tarea.id == null ? 'Nueva tarea' : 'Editar tarea'}">Tarea</h2>
+            <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}">Error</div>
+            <form th:action="@{/catalogo/guardar}" method="post">
+                <input type="hidden" name="id" th:value="${tarea.id}">
+                <div class="mb-3">
+                    <label for="nombreTarea" class="form-label fw-semibold">Nombre de la tarea</label>
+                    <input type="text" id="nombreTarea" name="nombreTarea" class="form-control"
+                           th:value="${tarea.nombreTarea}" placeholder="Ej: Cambio de retén de dirección" required>
+                </div>
+                <div class="mb-3">
+                    <label for="precio" class="form-label fw-semibold">Precio sugerido ($)</label>
+                    <input type="number" id="precio" name="precio" class="form-control" min="0" step="1"
+                           th:value="${tarea.costoEstimadoDefecto != null ? tarea.costoEstimadoDefecto.toBigInteger() : ''}">
+                </div>
+                <div class="mb-3">
+                    <span class="form-label fw-semibold d-block mb-1">Este precio es</span>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="neto" name="precioIncluyeIva" value="false"
+                               th:checked="${!tarea.precioIncluyeIva}">
+                        <label class="form-check-label" for="neto">Neto (sin IVA)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="conIva" name="precioIncluyeIva" value="true"
+                               th:checked="${tarea.precioIncluyeIva}">
+                        <label class="form-check-label" for="conIva">Con IVA incluido</label>
+                    </div>
+                    <div class="form-text" id="otroPrecio"></div>
+                </div>
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" id="activo" name="activo" value="true"
+                           th:checked="${tarea.id == null or tarea.activo}">
+                    <label class="form-check-label" for="activo">Activa (aparece al registrar trabajos)</label>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/catalogo}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary flex-grow-1">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+    // Muestra el otro valor mientras se escribe (IVA 19 %)
+    document.addEventListener('DOMContentLoaded', function () {
+        const precio = document.getElementById('precio');
+        const conIva = document.getElementById('conIva');
+        const neto = document.getElementById('neto');
+        const salida = document.getElementById('otroPrecio');
+        const fmt = n => '$' + Math.round(n).toLocaleString('es-CL');
+        function actualizar() {
+            const v = parseFloat(precio.value);
+            if (isNaN(v)) { salida.textContent = ''; return; }
+            salida.textContent = conIva.checked
+                ? 'Neto: ' + fmt(v / 1.19)
+                : 'Con IVA: ' + fmt(v * 1.19);
+        }
+        [precio, conIva, neto].forEach(el => el.addEventListener('input', actualizar));
+        actualizar();
+    });
+    </script>
+</div>
+</body>
+</html>

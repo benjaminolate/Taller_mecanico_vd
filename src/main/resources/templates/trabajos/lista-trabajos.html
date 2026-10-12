@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout}">
+<head>
+    <title>Trabajos de la Orden</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- ── Cabecera ─────────────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold text-secondary mb-1">
+                Trabajos — Orden <span class="text-primary" th:text="${orden.id}">ORD-001</span>
+            </h2>
+            <p class="text-muted mb-0">
+                Cliente: <strong th:text="${orden.cliente?.nombre}">—</strong>
+                <span th:if="${orden.vehiculo != null}">
+                    · Patente:
+                    <span class="badge bg-secondary" th:text="${orden.vehiculo.patente}">DEMO01</span>
+                </span>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{'/ordenes/' + ${orden.id}}" class="btn btn-outline-secondary">
+                Ver Detalle
+            </a>
+            <a th:href="@{'/ordenes/' + ${orden.id} + '/pdf'}"
+               class="btn btn-outline-danger" target="_blank">
+                Generar PDF
+            </a>
+            <a th:href="@{/ordenes/lista}" class="btn btn-outline-dark">
+                Historial
+            </a>
+        </div>
+    </div>
+    <!-- ── Alertas flash ─────────────────────────────────────────────────── -->
+    <div th:if="${mensajeExito}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${mensajeExito}">Éxito.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${mensajeError}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> <span th:text="${mensajeError}">Error.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div class="row g-4">
+        <!-- ── Columna izquierda: panel de estado + nuevo trabajo ─────────── -->
+        <div class="col-lg-4">
+            <!-- Panel de estado de la orden -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">Estado de la Orden</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 text-center">
+                        <span class="badge fs-5 px-4 py-2"
+                              th:text="${orden.estado}"
+                              th:class="${'badge fs-5 px-4 py-2 ' +
+                                (orden.estado?.name() == 'PENDIENTE'  ? 'bg-warning text-dark' :
+                                 orden.estado?.name() == 'EN_PROCESO' ? 'bg-info text-dark'    :
+                                 orden.estado?.name() == 'LISTO'      ? 'bg-success'           :
+                                 'bg-secondary')}">
+                            ESTADO
+                        </span>
+                    </div>
+                    <form sec:authorize="hasRole('JEFE')" th:if="${!#lists.isEmpty(estadosPermitidos)}"
+                          th:action="@{'/ordenes/' + ${orden.id} + '/trabajos/cambiar-estado'}"
+                          method="POST">
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">
+                                Cambiar estado manualmente:
+                            </label>
+                            <select name="nuevoEstado" class="form-select form-select-sm">
+                                <option th:each="e : ${estadosPermitidos}"
+                                        th:value="${e}"
+                                        th:text="${e.etiqueta}">
+                                </option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            Actualizar Estado
+                        </button>
+                    </form>
+                    <p sec:authorize="!hasRole('JEFE')" class="small text-muted mb-0">
+                        El estado cambia solo al agregar y completar trabajos.
+                    </p>
+                    <p sec:authorize="hasRole('JEFE')" th:if="${#lists.isEmpty(estadosPermitidos)}" class="small text-muted mb-0">
+                        La orden fue entregada y ya no admite cambios.
+                    </p>
+                </div>
+            </div>
+            <!-- Panel: resumen de costos -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">Resumen Costos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Total estimado:</span>
+                        <span class="fw-bold fs-5 text-success"
+                              th:text="${costoTotal != null && costoTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0
+                                         ? '$' + #numbers.formatDecimal(costoTotal, 1, 'POINT', 0, 'COMMA')
+                                         : 'No informado'}">
+                            $0
+                        </span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Trabajos totales:</span>
+                        <span class="fw-bold" th:text="${trabajos.size()}">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Completados:</span>
+                        <span class="fw-bold text-success" th:text="${trabajosCompletados}">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Pendientes:</span>
+                        <span class="fw-bold text-warning" th:text="${trabajosPendientes}">0</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Formulario: nuevo trabajo -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Registrar Nuevo Trabajo</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{'/ordenes/' + ${orden.id} + '/trabajos/guardar'}"
+                          th:object="${nuevoTrabajo}"
+                          method="POST"
+                          novalidate>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">
+                                Categoría <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select form-select-sm"
+                                    th:field="*{categoria}"
+                                    th:classappend="${#fields.hasErrors('categoria')} ? 'is-invalid'">
+                                <option value="">Seleccione...</option>
+                                <option th:each="cat : ${categorias}"
+                                        th:value="${cat}"
+                                        th:text="${cat}">
+                                </option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{categoria}"></div>
+                        </div>
+
+                        <!-- Catálogo de trabajos con autocompletado -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Tarea del catálogo (opcional)</label>
+                            <select class="form-select form-select-sm" id="catalogoTrabajoSelect">
+                                <option value="">-- Escribir manualmente --</option>
+                                <option th:each="ct : ${catalogoTrabajos}"
+                                        th:value="${ct.id}"
+                                        th:text="${ct.nombreTarea + (ct.costoEstimadoDefecto != null
+                                                  ? ' — $' + #numbers.formatDecimal(ct.costoEstimadoDefecto, 1, 'POINT', 0, 'COMMA')
+                                                    + (ct.precioIncluyeIva ? ' (con IVA)' : ' (neto)')
+                                                  : '')}"
+                                        th:data-nombre="${ct.nombreTarea}"
+                                        th:data-costo="${ct.costoEstimadoDefecto != null ? ct.costoEstimadoDefecto.toBigInteger() : ''}">
+                                </option>
+                            </select>
+                            <small class="text-muted">
+                                Al elegir una tarea se completan Descripción y Costo; ambos
+                                quedan editables por si necesitas ajustarlos.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">
+                                Descripción <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control form-control-sm"
+                                      rows="3"
+                                      id="descripcionTrabajo"
+                                      th:field="*{descripcion}"
+                                      th:classappend="${#fields.hasErrors('descripcion')} ? 'is-invalid'"
+                                      placeholder="Ej. Cambio de retén de dirección..."></textarea>
+                            <div class="invalid-feedback" th:errors="*{descripcion}"></div>
+                        </div>
+
+                        <!-- Mecánico responsable (catálogo) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Mecánico responsable</label>
+                            <select class="form-select form-select-sm" th:field="*{mecanicoId}">
+                                <option value="">-- Sin asignar --</option>
+                                <option th:each="m : ${mecanicos}"
+                                        th:value="${m.id}"
+                                        th:text="${m.nombre}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Costo estimado ($)</label>
+                            <input type="number"
+                                   class="form-control form-control-sm"
+                                   id="costoTrabajo"
+                                   th:field="*{costoEstimado}"
+                                   th:classappend="${#fields.hasErrors('costoEstimado')} ? 'is-invalid'"
+                                   min="0" step="1" placeholder="0">
+                            <div class="invalid-feedback" th:errors="*{costoEstimado}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Observaciones</label>
+                            <textarea class="form-control form-control-sm"
+                                      rows="2"
+                                      th:field="*{observaciones}"
+                                      placeholder="Notas adicionales..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                            Guardar Trabajo
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- ── Columna derecha: tabla de trabajos ───────────────────────────── -->
+        <div class="col-lg-8">
+            <!-- Sin trabajos -->
+            <div th:if="${#lists.isEmpty(trabajos)}"
+                 class="card shadow-sm border-0 text-center p-5">
+                <div class="text-muted">
+                    <div class="display-4 mb-3">🔧</div>
+                    <h5>Sin trabajos registrados</h5>
+                    <p>Usa el formulario de la izquierda para agregar el primer trabajo a esta orden.</p>
+                </div>
+            </div>
+            <!-- Tabla de trabajos -->
+            <div class="card shadow-sm border-0" th:unless="${#lists.isEmpty(trabajos)}">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width:40px">#</th>
+                                    <th>Descripción</th>
+                                    <th>Categoría</th>
+                                    <th>Mecánico</th>
+                                    <th>Costo</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="t, iter : ${trabajos}"
+                                    th:class="${t.completado ? 'table-success' : ''}">
+                                    <td class="text-muted small" th:text="${iter.count}">1</td>
+                                    <td>
+                                        <span class="fw-bold" th:text="${t.descripcion}">—</span>
+                                        <div class="text-muted small"
+                                             th:if="${t.observaciones != null}"
+                                             th:text="${#strings.abbreviate(t.observaciones, 60)}">
+                                        </div>
+                                        <div class="text-muted" style="font-size:.75rem"
+                                             th:if="${t.creadoPor != null}"
+                                             th:text="${'Registrado por ' + t.creadoPor
+                                                       + (t.modificadoPor != null and t.modificadoPor != t.creadoPor
+                                                          ? ' · modificado por ' + t.modificadoPor : '')}">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary"
+                                              th:text="${t.categoria}">CAT</span>
+                                    </td>
+                                    <!-- Mecánico responsable -->
+                                    <td class="small"
+                                        th:text="${t.mecanico != null ? t.mecanico.nombre : '—'}">—</td>
+                                    <td class="fw-bold"
+                                        th:text="${t.costoEstimado != null
+                                                   ? '$' + #numbers.formatDecimal(t.costoEstimado, 1, 'POINT', 0, 'COMMA')
+                                                   : '—'}">
+                                        —
+                                    </td>
+                                    <td>
+                                        <span th:if="${t.completado}"
+                                              class="badge bg-success">✔ Completado</span>
+                                        <span th:unless="${t.completado}"
+                                              class="badge bg-warning text-dark">Pendiente</span>
+                                        <div class="text-muted" style="font-size:0.7rem"
+                                             th:if="${t.fechaCompletado != null}"
+                                             th:text="${#temporals.format(t.fechaCompletado,'dd/MM HH:mm')}">
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a th:unless="${orden.estado.esFinal()}"
+                                               th:href="@{'/ordenes/' + ${orden.id} + '/trabajos/' + ${t.id} + '/editar'}"
+                                               class="btn btn-sm btn-outline-primary" title="Editar">✎</a>
+                                            <form th:unless="${t.completado}"
+                                                  th:action="@{'/ordenes/' + ${orden.id} + '/trabajos/' + ${t.id} + '/completar'}"
+                                                  method="POST" class="d-inline">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-success"
+                                                        title="Marcar como completado">
+                                                    ✔
+                                                </button>
+                                            </form>
+                                            <form sec:authorize="hasRole('JEFE')"
+                                                  th:action="@{'/ordenes/' + ${orden.id} + '/trabajos/' + ${t.id} + '/eliminar'}"
+                                                  method="POST" class="d-inline"
+                                                  onsubmit="return confirm('¿Eliminar este trabajo?')">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Eliminar">
+                                                    🗑
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <!-- Fila de total -->
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Total estimado:</td>
+                                    <td class="fw-bold text-success"
+                                        th:text="${costoTotal != null && costoTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0
+                                                   ? '$' + #numbers.formatDecimal(costoTotal, 1, 'POINT', 0, 'COMMA')
+                                                   : '—'}">
+                                        $0
+                                    </td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Autocompletado de Descripción y Costo
+         al elegir una tarea del catálogo. El costo queda editable.
+    ══════════════════════════════════════════════════════════════════ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectCatalogo   = document.getElementById('catalogoTrabajoSelect');
+        const inputDescripcion = document.getElementById('descripcionTrabajo');
+        const inputCosto       = document.getElementById('costoTrabajo');
+
+        selectCatalogo.addEventListener('change', function () {
+            const opcion = this.options[this.selectedIndex];
+            if (!opcion.value) return; // "-- Escribir manualmente --"
+
+            inputDescripcion.value = opcion.dataset.nombre ?? '';
+            // El precio se autocompleta pero queda 100% editable para el mecánico.
+            inputCosto.value = opcion.dataset.costo ?? '';
+        });
+    });
+    </script>
+</div>
+</body>
+</html>
